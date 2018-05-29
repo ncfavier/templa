@@ -6,11 +6,11 @@ It executes **scripts** embedded in **template files** and substitutes their out
 
 ## Principle
 
-*templa* processes **template files** and generate **output files** according to the following principle:
+*templa* processes **template files** and generates **output files** according to the following principle:
 
 Any segment of a file between a line that starts with `#!` (a *shebang*, possibly indented) and a line that ends with `!#` (or the end of the file) is considered an **embedded script**.
 
-This embedded script is isolated in a temporary file, with the proper amount of indentation removed and the final `!#` stripped, and executed. The standard output of that program is added to the output file, replacing the embedded script.
+This embedded script is isolated in a temporary file, with the proper amount of indentation removed and the final `!#` stripped, and then executed. The standard output of that program is added to the output file, replacing the embedded script.
 
 A literal `#!` can be escaped with `##!`.
 
