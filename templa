@@ -39,7 +39,7 @@ while getopts :"$options" o; do
     esac
 done
 
-shift "$(( OPTIND - 1))"
+shift "$(( OPTIND - 1 ))"
 
 # Check arguments
 
@@ -75,7 +75,7 @@ for file in "$templates"/**; do
     mkdir -p -- "${target%/*}"
 
     while IFS= read -r line; do
-        if [[ $line =~ ^([[:space:]]*)(##?!).*$ ]]; then
+        if [[ $line =~ ^([[:space:]]*)(\#\#?!).*$ ]]; then
             indent=${BASH_REMATCH[1]}
             shebang=${BASH_REMATCH[2]}
 
@@ -86,20 +86,20 @@ for file in "$templates"/**; do
             fi
 
             # Create a temporary file to store the script
-            script_file=$(mktemp --tmpdir "$basename"-"$(( ++n ))"-XXX) || die "failed to create temporary file"
+            script_file=$(mktemp --tmpdir "$basename-$(( ++n ))-XXX") || die "Failed to create temporary file."
             trap 'rm -f -- "$script_file"' exit
 
             # Output following lines to the script, removing indentation
             # (this might break if the shebang line has a higher indentation level than the script)
-            printf '%s\n' "${line#$indent}" > "$script_file"
-            while IFS= read -r line; do
+            in_script=1
+            while (( in_script )); do
                 if [[ $line == *'!#' ]]; then
                     line=${line%'!#'}
-                    printf '%s\n' "${line#$indent}"
-                    break
+                    in_script=0
                 fi
                 printf '%s\n' "${line#$indent}"
-            done >> "$script_file"
+                (( in_script )) && IFS= read -r line
+            done > "$script_file"
 
             # Make the script executable
             chmod +x "$script_file"
