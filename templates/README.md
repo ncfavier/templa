@@ -44,7 +44,7 @@ To see a live example, check out `templates/README.md`.
 
 ## Installing
 
-*templa* requires **Bash version 4** or later, as well as **GNU coreutils**. These should be present on any GNU/Linux system.
+*templa* requires **Bash version 4** or later, as well as **GNU coreutils**. These should be present on most GNU/Linux systems.
 
 Clone this repository on your system and copy the `templa` executable to some location in your PATH, e.g. `/usr/local/bin` or `~/.bin`.
 
