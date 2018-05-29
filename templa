@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+# templa - a script-based template engine
+
+# Useful options
+shopt -s globstar dotglob nullglob
+
+# Functions
+
+die() {
+    printf '%s\n' "$@"
+    exit 1
+} >&2
+
+# Variables
+
+usage="Usage: ${0##*/} [-h] templates target"
+
+# Process command line arguments
+
+while getopts :h o; do
+    case $o in
+        h)
+            printf '%s\n' "$usage"
+            printf '    %s\n' "Render the templates in TEMPLATES to the TARGET directory."
+            printf '\n'
+            printf 'Options:\n'
+            printf '    %-*s%s\n' 4 "-h" "Show this help message."
+            exit
+            ;;
+        *)
+            die "Unknown option: $OPTARG" "$usage"
+            ;;
+    esac
+done
+
+shift "$(( OPTIND - 1))"
+
+# Check arguments
+
+(( $# == 2 )) || die "$usage"
+templates=$1
+destination=$2
+
+[[ -d $templates ]] || die "Template directory doesn't exist: $templates"
+
+if [[ ! -e $destination ]]; then
+    mkdir -- "$destination"
+elif [[ ! -d $destination ]]; then
+    die "Destination exists and is not a directory: $destination"
+fi
+
+# Rendering loop
+
+for file in "$templates"/**; do
+    basename=${file##*/}
+    target=${file/#${templates%/}/${destination%/}}
+    n=0
+
+    # Create directories
+    if [[ -d $file && ! -d $target ]]; then
+        mkdir -p -- "$target"
+        continue
+    fi
+
+    # Only process readable files
+    [[ -f $file && -r $file ]] || continue
+
+    # Create the directory structure for the target file
+    mkdir -p -- "${target%/*}"
+
+    while IFS= read -r line; do
+        if [[ $line =~ ^([[:space:]]*)(##?!).*$ ]]; then
+            indent=${BASH_REMATCH[1]}
+            shebang=${BASH_REMATCH[2]}
+
+            # If the shebang is '##!', replace it with a regular '#!' and ignore it
+            if [[ $shebang == '##!' ]]; then
+                printf '%s\n' "${line/"$shebang"/\#!}"
+                continue
+            fi
+
+            # Create a temporary file to store the script
+            script_file=$(mktemp --tmpdir "$basename"-"$(( ++n ))"-XXX) || die "failed to create temporary file"
+            trap 'rm -f -- "$script_file"' exit
+
+            # Output following lines to the script, removing indentation
+            # (this might break if the shebang line has a higher indentation level than the script)
+            printf '%s\n' "${line#$indent}" > "$script_file"
+            while IFS= read -r line; do
+                if [[ $line == *'!#' ]]; then
+                    line=${line%'!#'}
+                    printf '%s\n' "${line#$indent}"
+                    break
+                fi
+                printf '%s\n' "${line#$indent}"
+            done >> "$script_file"
+
+            # Make the script executable
+            chmod +x "$script_file"
+
+            # Run the script, adding indentation if applicable
+            if [[ ! $indent ]]; then
+                "$script_file"
+            else
+                "$script_file" |
+                    while IFS= read -r line; do
+                        printf '%s%s\n' "$indent" "$line"
+                    done
+            fi
+
+            # Delete the script
+            rm -f -- "$script_file"
+        else
+            printf '%s\n' "$line"
+        fi
+    done < "$file" > "$target"
+done

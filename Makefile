@@ -1,0 +1,4 @@
+PATH += :.
+
+all:
+	templa templates .
