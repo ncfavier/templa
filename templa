@@ -3,35 +3,52 @@
 # templa - a script-based template engine
 
 # Useful options
-shopt -s globstar dotglob nullglob
+shopt -s globstar nullglob
 
 # Functions
 
-die() {
+err() {
     printf '%s\n' "$@"
-    exit 1
 } >&2
+
+die() {
+    err "$@"
+    exit 1
+}
 
 # Variables
 
-options='hq'
-usage="Usage: ${0##*/} [-$options] templates target"
+optstring=':t:vqh'
+usage="Usage: ${0##*/} [-qh] [-t target] templates..."
+
+target=.
+verbose=0
 
 # Process command line arguments
 
-while getopts :"$options" o; do
+while getopts "$optstring" o; do
     case $o in
+        t)
+            target=$OPTARG
+            ;;
+        v)
+            verbose=1
+            ;;
+        q)
+            exec 2> /dev/null
+            ;;
         h)
+            printopt() { printf '    %-*s%s\n' 4 "$@"; }
             printf '%s\n' "$usage"
             printf '    %s\n' "Render the templates from TEMPLATES to the TARGET directory."
             printf '\n'
             printf 'Options:\n'
-            printf '    %-*s%s\n' 4 "-h" "Show this help message."
-            printf '    %-*s%s\n' 4 "-q" "Quiet mode, don't print anything."
+            printopt -t "Specify the target directory. By default, the current directory is used."
+            printopt '' "If - is specified, render everything to standard output."
+            printopt -v "Verbose mode, print file names to standard output before rendering them."
+            printopt -q "Quiet mode, don't print errors."
+            printopt -h "Show this help message."
             exit
-            ;;
-        q)
-            exec &> /dev/null
             ;;
         *)
             die "Unknown option: $OPTARG" "$usage"
@@ -43,81 +60,106 @@ shift "$(( OPTIND - 1 ))"
 
 # Check arguments
 
-(( $# == 2 )) || die "$usage"
-templates=$1
-destination=$2
+(( $# )) || die "$usage"
 
-[[ -d $templates ]] || die "Template directory doesn't exist: $templates"
-
-if [[ ! -e $destination ]]; then
-    mkdir -- "$destination"
-elif [[ ! -d $destination ]]; then
-    die "Destination exists and is not a directory: $destination"
+if [[ $target == - ]]; then
+    :
+elif [[ ! -e $target ]]; then
+    mkdir -- "$target"
+elif [[ ! -d $target ]]; then
+    die "Target exists and is not a directory: $target"
 fi
 
 # Rendering loop
 
-for file in "$templates"/**; do
-    basename=${file##*/}
-    target=${file/#${templates%/}/${destination%/}}
-    n=0
-
-    # Create directories
-    if [[ -d $file && ! -d $target ]]; then
-        mkdir -p -- "$target"
-        continue
+for template do
+    if [[ -d $template && -r $template && -x $template ]]; then
+        template_dir=$template
+        template_files=("$template"/**)
+    elif [[ -e $template ]]; then
+        [[ $template == */* ]] || template=./$template
+        template_dir=${template%/*}
+        template_files=("$template")
+    else
+        err "Invalid template location: $template"
     fi
 
-    # Only process readable files
-    [[ -f $file && -r $file ]] || continue
+    for file in "${template_files[@]}"; do
+        basename=${file##*/}
+        n=0
 
-    # Create the directory structure for the target file
-    mkdir -p -- "${target%/*}"
-
-    while IFS= read -r line; do
-        if [[ $line =~ ^([[:space:]]*)(\#\#?!).*$ ]]; then
-            indent=${BASH_REMATCH[1]}
-            shebang=${BASH_REMATCH[2]}
-
-            # If the shebang is '##!', replace it with a regular '#!' and ignore it
-            if [[ $shebang == '##!' ]]; then
-                printf '%s\n' "${line/"$shebang"/\#!}"
-                continue
-            fi
-
-            # Create a temporary file to store the script
-            script_file=$(mktemp --tmpdir "$basename-$(( ++n ))-XXX") || die "Failed to create temporary file."
-            trap 'rm -f -- "$script_file"' exit
-
-            # Output following lines to the script, removing indentation
-            # (this might break if the shebang line has a higher indentation level than the script)
-            in_script=1
-            while (( in_script )); do
-                if [[ $line == *'!#' ]]; then
-                    line=${line%'!#'}
-                    in_script=0
-                fi
-                printf '%s\n' "${line#$indent}"
-                (( in_script )) && IFS= read -r line
-            done > "$script_file"
-
-            # Make the script executable
-            chmod +x "$script_file"
-
-            # Run the script, adding indentation if applicable
-            if [[ ! $indent ]]; then
-                "$script_file"
-            else
-                "$script_file" |
-                    while IFS= read -r line; do
-                        printf '%s%s\n' "$indent" "$line"
-                    done
-            fi
-
-            # Delete the script
-            rm -f -- "$script_file"
+        if [[ $target == - ]]; then
+            target_file=/dev/stdout
         else
-            printf '%s\n' "$line"
+            target_file=${file/#${template_dir%/}/${target%/}}
         fi
-    done < "$file" > "$target"
+
+        if [[ $target_file -ef $file ]]; then
+            err "Template file and target file are identical: $file"
+            continue
+        fi
+
+        # Create directories
+        if [[ -d $file && ! -d $target_file ]]; then
+            mkdir -p -- "$target_file"
+            continue
+        fi
+
+        # Only process readable files
+        [[ -f $file && -r $file ]] || continue
+
+        # Create the directory structure for the target_file file
+        target_subdir=${target_file%/*}
+        [[ -d $target_subdir ]] || mkdir -p -- "$target_subdir"
+
+        # Print the file name if verbose mode is on
+        (( verbose )) && printf '%s\n' "$file"
+
+        while IFS= read -r line; do
+            if [[ $line =~ ^([[:space:]]*)(\#\#?!).*$ ]]; then
+                indent=${BASH_REMATCH[1]}
+                shebang=${BASH_REMATCH[2]}
+
+                # If the shebang is '##!', replace it with a regular '#!' and ignore it
+                if [[ $shebang == '##!' ]]; then
+                    printf '%s\n' "${line/"$shebang"/\#!}"
+                    continue
+                fi
+
+                # Create a temporary file to store the script
+                script_file=$(mktemp --tmpdir "$basename-$(( ++n ))-XXX") || die "Failed to create temporary file."
+                trap 'rm -f -- "$script_file"' exit
+
+                # Output following lines to the script, removing indentation
+                # (this might break if the shebang line has a higher indentation level than the script)
+                in_script=1
+                while (( in_script )); do
+                    if [[ $line == *'!#' ]]; then
+                        line=${line%'!#'}
+                        in_script=0
+                    fi
+                    printf '%s\n' "${line#$indent}"
+                    (( in_script )) && IFS= read -r line
+                done > "$script_file"
+
+                # Make the script executable
+                chmod +x "$script_file"
+
+                # Run the script, adding indentation if applicable
+                if [[ ! $indent ]]; then
+                    "$script_file"
+                else
+                    "$script_file" |
+                        while IFS= read -r line; do
+                            printf '%s%s\n' "$indent" "$line"
+                        done
+                fi
+
+                # Delete the script
+                rm -f -- "$script_file"
+            else
+                printf '%s\n' "$line"
+            fi
+        done < "$file" > "$target_file"
+    done
 done

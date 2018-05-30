@@ -51,12 +51,15 @@ Clone this repository on your system and copy the `templa` executable to some lo
 
 ## Using
 
-    Usage: templa [-hq] templates target
+    Usage: templa [-qh] [-t target] templates...
         Render the templates from TEMPLATES to the TARGET directory.
     
     Options:
+        -t  Specify the target directory. By default, the current directory is used.
+            If - is specified, render everything to standard output.
+        -v  Verbose mode, print file names to standard output before rendering them.
+        -q  Quiet mode, don't print errors.
         -h  Show this help message.
-        -q  Quiet mode, don't print anything.
 
 ## :balance_scale: License
 

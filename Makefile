@@ -1,4 +1,4 @@
 PATH += :.
 
-all:
-	templa templates .
+all: templates
+	templa $^
