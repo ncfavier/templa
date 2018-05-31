@@ -43,8 +43,8 @@ while getopts "$optstring" o; do
             printf '    %s\n' "Render the templates from TEMPLATES to the TARGET directory."
             printf '\n'
             printf 'Options:\n'
-            printopt -t "Specify the target directory. By default, the current directory is used."
-            printopt '' "If - is specified, render everything to standard output."
+            printopt -t "Choose the target directory. By default, the current directory is used."
+            printopt '' "If - is given, render everything to standard output."
             printopt -v "Verbose mode, print file names to standard output before rendering them."
             printopt -q "Quiet mode, don't print errors."
             printopt -h "Show this help message."

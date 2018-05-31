@@ -41,7 +41,7 @@ A literal `#!` can be escaped with `##!`.
 
 ----------
 
-To see a live example, check out `templates/README.md`.
+To see a live example, check out [`templates/README.md`](https://github.com/naim42/templa/blob/master/templates/README.md).
 
 ## Installing
 
@@ -55,8 +55,8 @@ Clone this repository on your system and copy the `templa` executable to some lo
         Render the templates from TEMPLATES to the TARGET directory.
     
     Options:
-        -t  Specify the target directory. By default, the current directory is used.
-            If - is specified, render everything to standard output.
+        -t  Choose the target directory. By default, the current directory is used.
+            If - is given, render everything to standard output.
         -v  Verbose mode, print file names to standard output before rendering them.
         -q  Quiet mode, don't print errors.
         -h  Show this help message.
