@@ -61,6 +61,10 @@ Clone this repository on your system and copy the `templa` executable to some lo
         -q  Quiet mode, don't print errors.
         -h  Show this help message.
 
+## Credits
+
+Inspired by [circuitandcode/contate](https://github.com/circuitandcode/contate).
+
 ## :balance_scale: License
 
 This software is distributed under the terms of the [GNU GPL v3](https://www.gnu.org/licenses/).  See `LICENSE`.
