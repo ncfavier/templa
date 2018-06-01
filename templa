@@ -75,7 +75,7 @@ fi
 for template do
     if [[ -d $template && -r $template && -x $template ]]; then
         template_dir=$template
-        template_files=("$template"/**)
+        template_files=("${template%/}"/**)
     elif [[ -e $template ]]; then
         [[ $template == */* ]] || template=./$template
         template_dir=${template%/*}
@@ -92,16 +92,16 @@ for template do
             target_file=/dev/stdout
         else
             target_file=${file/#${template_dir%/}/${target%/}}
+
+            # Create directories
+            if [[ -d $file && ! -d $target_file ]]; then
+                mkdir -p -- "$target_file"
+                continue
+            fi
         fi
 
         if [[ $target_file -ef $file ]]; then
             err "Template file and target file are identical: $file"
-            continue
-        fi
-
-        # Create directories
-        if [[ -d $file && ! -d $target_file ]]; then
-            mkdir -p -- "$target_file"
             continue
         fi
 
