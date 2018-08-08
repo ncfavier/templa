@@ -134,7 +134,7 @@ for template do
                 # (this might break if the shebang line has a higher indentation level than the script)
                 in_script=1
                 while (( in_script )); do
-                    if [[ $line == *'!#' ]]; then
+                    if [[ ${line%$'\r'} == *'!#' ]]; then
                         line=${line%'!#'}
                         in_script=0
                     fi
