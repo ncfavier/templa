@@ -1,4 +1,4 @@
-# :watermelon: templa
+# templa
 
 A simple and *very* stupid [template engine](https://en.wikipedia.org/wiki/Template_processor).
 
