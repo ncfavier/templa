@@ -41,7 +41,7 @@ A literal `#!` can be escaped with `##!`.
 
 ----------
 
-To see a live example, check out [`templates/README.md`](https://github.com/naim42/templa/blob/master/templates/README.md).
+To see a live example, check out [`templates/README.md`](https://git.monade.li/n/templa/src/branch/master/templates/README.md).
 
 ## Installing
 
