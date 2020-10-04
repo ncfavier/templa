@@ -52,7 +52,3 @@ Clone this repository on your system and copy the `templa` executable to some lo
 
     #!/bin/bash
     templa -h !#
-
-## License
-
-This software is distributed under the terms of the [GNU GPL v3](https://www.gnu.org/licenses/).  See `LICENSE`.
